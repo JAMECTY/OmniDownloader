@@ -833,7 +833,7 @@ struct RelayWebViewRepresentable: UIViewRepresentable {
         }
 
         private func injectCatCatchSniffScript(_ webView: WKWebView) {
-            let js = """
+            let js = #"""
             (function() {
                 if (window.__omniCatCatchInjected) return;
                 window.__omniCatCatchInjected = true;
@@ -922,7 +922,7 @@ struct RelayWebViewRepresentable: UIViewRepresentable {
                     return count;
                 };
             })();
-            """
+            """#
             webView.evaluateJavaScript(js, completionHandler: nil)
         }
     }

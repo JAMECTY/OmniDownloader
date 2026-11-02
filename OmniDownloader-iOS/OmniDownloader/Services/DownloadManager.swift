@@ -76,8 +76,9 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
         tasks.insert(newTask, at: 0)
         saveTasks()
         
+        let taskToStart = newTask
         Task {
-            await startDownloadProcess(for: newTask)
+            await startDownloadProcess(for: taskToStart)
         }
     }
     

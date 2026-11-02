@@ -1,51 +1,64 @@
-name: 构建 iOS OmniDownloader.ipa
+name: Build unsigned iOS IPA
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main]
     paths:
       - 'OmniDownloader-iOS/**'
+      - '.github/workflows/ios-build.yml'
 
 jobs:
   build-ipa:
-    name: 编译与打包 IPA
-    runs-on: macos-14
+    name: Build and package IPA
+    runs-on: macos-15
 
     steps:
-      - name: 检出代码
+      - name: Check out source
         uses: actions/checkout@v4
 
-      - name: 选择 Xcode 版本
+      - name: Select Xcode 16.4
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
           xcodebuild -version
 
-      - name: 编译 iOS App (Release)
-        working-directory: ./OmniDownloader-iOS
+      - name: Build iOS app without signing
+        working-directory: OmniDownloader-iOS
         run: |
+          set -o pipefail
           xcodebuild build \
             -project OmniDownloader.xcodeproj \
             -scheme OmniDownloader \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" 2>&1 | tee build.log
 
-      - name: 打包为标准未签名 IPA (供巨魔/爱思/AltStore签名安装)
-        working-directory: ./OmniDownloader-iOS
+      - name: Package unsigned IPA
+        working-directory: OmniDownloader-iOS
         run: |
+          test -d build/Build/Products/Release-iphoneos/OmniDownloader.app
           mkdir -p build/Payload
-          cp -r build/Build/Products/Release-iphoneos/OmniDownloader.app build/Payload/
+          cp -R build/Build/Products/Release-iphoneos/OmniDownloader.app build/Payload/
           cd build
-          zip -r -q OmniDownloader.ipa Payload
+          ditto -c -k --sequesterRsrc --keepParent Payload OmniDownloader.ipa
           ls -lh OmniDownloader.ipa
 
-      - name: 上传 IPA 产物到 GitHub Actions Artifacts
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: OmniDownloader-iOS-IPA
+          name: OmniDownloader-iOS-unsigned-IPA
           path: OmniDownloader-iOS/build/OmniDownloader.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmniDownloader-iOS-build-log
+          path: OmniDownloader-iOS/build.log
+          if-no-files-found: ignore
           retention-days: 14
