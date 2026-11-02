@@ -14,7 +14,7 @@ struct CollectionTaskCard: View {
     private var totalCount: Int { tasks.count }
     private var completedCount: Int { tasks.filter { $0.status == .completed }.count }
     private var currentActiveTask: DownloadTask? {
-        tasks.first { $0.status == .downloading || $0.status == .muxing || $0.status == .saving } ?? tasks.first { $0.status == .pending }
+        tasks.first { $0.status == .downloading || $0.status == .processing } ?? tasks.first { $0.status == .pending }
     }
     
     // 加权总进度计算
@@ -23,8 +23,8 @@ struct CollectionTaskCard: View {
         let sum = tasks.reduce(Float(0)) { acc, t in
             if t.status == .completed {
                 return acc + 1.0
-            } else if t.status == .downloading || t.status == .muxing || t.status == .saving {
-                return acc + min(max(t.progress, 0), 0.99)
+            } else if t.status == .downloading || t.status == .processing {
+                return acc + min(max(t.progress / 100, 0), 0.99)
             }
             return acc
         }
@@ -113,12 +113,12 @@ struct CollectionTaskCard: View {
                         
                         Spacer()
                         
-                        Text("\(Int(active.progress * 100))%")
+                        Text("\(Int(active.progress))%")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                     }
                     
-                    ProgressView(value: active.progress, total: 1.0)
+                    ProgressView(value: active.progress, total: 100.0)
                         .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                         .animation(.easeInOut(duration: 0.2), value: active.progress)
                     
@@ -217,11 +217,13 @@ struct CollectionTaskCard: View {
         case .pending:
             return "等待中"
         case .downloading:
-            return "下载中 \(Int(task.progress * 100))%"
-        case .muxing:
+            return "下载中 \(Int(task.progress))%"
+        case .analyzing:
+            return "解析中..."
+        case .processing:
             return "合成中..."
-        case .saving:
-            return "存入相册..."
+        case .cancelled:
+            return "已取消"
         case .completed:
             return "已保存至相册"
         case .paused:
@@ -237,7 +239,7 @@ struct CollectionTaskCard: View {
             return .green
         case .failed:
             return .red
-        case .downloading, .muxing, .saving:
+        case .downloading, .analyzing, .processing:
             return .accentColor
         default:
             return .secondary

@@ -67,6 +67,19 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
         return result
     }
     
+    /// 按完成状态过滤聚合卡片。
+    public func getDisplayItems(completed: Bool) -> [TaskDisplayItem] {
+        displayItems.compactMap { item in
+            switch item {
+            case .single(let task):
+                return (task.status == .completed) == completed ? item : nil
+            case .collection(let id, let title, let collectionTasks):
+                let filtered = collectionTasks.filter { ($0.status == .completed) == completed }
+                return filtered.isEmpty ? nil : .collection(collectionId: id, collectionTitle: title, tasks: filtered)
+            }
+        }
+    }
+
     // MARK: - 任务提交与控制
     
     /// 添加并启动下载任务
@@ -149,6 +162,45 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
         }
     }
     
+    /// 暂停当前任务对应的网络下载。
+    public func pauseTask(id: String) {
+        session.getAllTasks { sessionTasks in
+            DispatchQueue.main.async {
+                for sessionTask in sessionTasks where sessionTask.taskDescription?.hasPrefix("\(id)|") == true {
+                    sessionTask.suspend()
+                }
+                self.updateTask(id: id) { $0.status = .paused }
+            }
+        }
+    }
+
+    /// 恢复已暂停的网络下载。
+    public func resumeTask(id: String) {
+        session.getAllTasks { sessionTasks in
+            DispatchQueue.main.async {
+                let matching = sessionTasks.filter { $0.taskDescription?.hasPrefix("\(id)|") == true }
+                if matching.isEmpty {
+                    self.retryTask(id: id)
+                } else {
+                    matching.forEach { $0.resume() }
+                    self.updateTask(id: id) { $0.status = .downloading }
+                }
+            }
+        }
+    }
+
+    public func pauseAll() {
+        for task in tasks where task.status == .downloading {
+            pauseTask(id: task.id)
+        }
+    }
+
+    public func resumeAll() {
+        for task in tasks where task.status == .paused {
+            resumeTask(id: task.id)
+        }
+    }
+
     public func cancelTask(id: String) {
         updateTask(id: id) { t in
             t.status = .cancelled
@@ -166,6 +218,13 @@ public class DownloadManager: NSObject, ObservableObject, URLSessionDownloadDele
         }
     }
     
+    public func clearCompletedTasks() {
+        let completedIds = tasks.filter { $0.status == .completed }.map(\.id)
+        for id in completedIds {
+            deleteTask(id: id)
+        }
+    }
+
     public func cancelCollection(collectionId: String) {
         for task in tasks where task.collectionId == collectionId && (task.status == .downloading || task.status == .pending) {
             cancelTask(id: task.id)

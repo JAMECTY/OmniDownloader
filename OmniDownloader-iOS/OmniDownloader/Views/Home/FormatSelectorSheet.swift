@@ -411,7 +411,7 @@ public struct FormatSelectorSheet: View {
                     if let custom = onStartBatchDownload {
                         custom(batchTasks)
                     } else {
-                        downloadManager.addBatchTasks(batchTasks)
+                        downloadManager.addTasks(batchTasks)
                     }
                     if let dismiss = onDismiss {
                         dismiss()
@@ -454,7 +454,7 @@ public struct FormatSelectorSheet: View {
                     if let custom = onStartBatchDownload {
                         custom(batchTasks)
                     } else {
-                        downloadManager.addBatchTasks(batchTasks)
+                        downloadManager.addTasks(batchTasks)
                     }
                     if let dismiss = onDismiss {
                         dismiss()

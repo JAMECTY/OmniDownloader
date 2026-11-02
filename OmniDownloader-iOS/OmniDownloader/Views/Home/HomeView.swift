@@ -166,7 +166,6 @@ struct HomeView: View {
                 TextEditor(text: $inputUrl)
                     .frame(minHeight: 90)
                     .font(.system(size: 15))
-                    .scrollContentBackground(.hidden)
                     .background(Color.clear)
             }
             .padding(8)

@@ -8,7 +8,7 @@ struct MainTabView: View {
     private let strings = AppStrings.current
     
     private var activeDownloadCount: Int {
-        downloadManager.tasks.filter { $0.status == .downloading || $0.status == .pending || $0.status == .muxing || $0.status == .saving }.count
+        downloadManager.tasks.filter { $0.status == .downloading || $0.status == .pending || $0.status == .processing || $0.status == .analyzing }.count
     }
     
     var body: some View {

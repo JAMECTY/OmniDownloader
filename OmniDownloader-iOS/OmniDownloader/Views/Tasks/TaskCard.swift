@@ -52,7 +52,7 @@ struct TaskCard: View {
             // 进度条与状态信息 (针对未完成任务)
             if task.status != .completed {
                 VStack(alignment: .leading, spacing: 6) {
-                    ProgressView(value: task.progress, total: 1.0)
+                    ProgressView(value: task.progress, total: 100.0)
                         .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                         .animation(.easeInOut(duration: 0.2), value: task.progress)
                     
@@ -173,6 +173,12 @@ struct TaskCard: View {
             return "\(task.selectedResolution) (无声)"
         case .audioOnly:
             return task.audioFormat.rawValue.uppercased()
+        case .gif:
+            return "GIF"
+        case .cover:
+            return "封面"
+        case .auto:
+            return "自动"
         }
     }
     
@@ -183,7 +189,7 @@ struct TaskCard: View {
             return .red
         case .paused:
             return .orange
-        case .muxing, .saving:
+        case .processing:
             return .purple
         default:
             return .accentColor
@@ -196,14 +202,16 @@ struct TaskCard: View {
         case .pending:
             return strings.statusPending
         case .downloading:
-            let pct = Int(task.progress * 100)
+            let pct = Int(task.progress)
             return "\(strings.statusDownloading) \(pct)%"
         case .paused:
             return strings.statusPaused
-        case .muxing:
+        case .analyzing:
+            return "解析中"
+        case .processing:
             return strings.statusMuxing
-        case .saving:
-            return strings.statusSavingToAlbum
+        case .cancelled:
+            return "已取消"
         case .completed:
             return strings.statusCompleted
         case .failed:
@@ -217,7 +225,7 @@ struct TaskCard: View {
             return .red
         case .paused:
             return .orange
-        case .muxing, .saving:
+        case .processing:
             return .purple
         case .completed:
             return .green
